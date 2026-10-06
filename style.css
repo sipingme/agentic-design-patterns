@@ -1,0 +1,34 @@
+/* Agentic adaptations of the Firecrawl editorial reading layout. */
+#sidebar-content { font-size:14px; }
+#page-title { letter-spacing:-0.035em; }
+li.navbar-link a[href="/chapter-directory"] { border-radius:12px; }
+.agentic-onboarding { border:1px solid #e8e8e8; margin:22px 0 28px; background:#fff; }
+.agentic-panel-header { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:24px; }
+.agentic-panel-header h3 { margin:0!important; font-size:20px!important; line-height:1.5; font-weight:600; }
+.agentic-panel-header p { margin:4px 0 0!important; color:#888; font-size:14px; }
+.agentic-panel-header>a { white-space:nowrap; font-size:12px; color:#888; text-decoration:none; border:0; }
+.agentic-panel-links { display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid #eee; }
+.agentic-panel-links>a { display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; padding:20px 8px; border:0; border-right:1px solid #eee; text-decoration:none; color:inherit; }
+.agentic-panel-links>a:last-child { border-right:0; }
+.agentic-panel-links>a:first-child { border-top:2px solid #ff4d00; margin-top:-1px; background:#fffaf7; }
+.agentic-panel-links>a:hover { background:#fafafa; }
+.agentic-symbol { font-size:24px; line-height:32px; color:#ed6b3c; }
+.agentic-panel-links strong { font-size:14px; }
+.agentic-panel-links span:last-child { font-size:12px; color:#888; }
+.agentic-panel-footer { border-top:1px solid #eee; color:#888; font-size:12px; padding:12px 24px; }
+.dark .agentic-onboarding { background:#111; border-color:#303030; }
+.dark .agentic-panel-links,.dark .agentic-panel-footer,.dark .agentic-panel-links>a { border-color:#303030; }
+.dark .agentic-panel-links>a:first-child { background:#1b1512; border-top-color:#ff4d00; }
+.dark .agentic-panel-links>a:hover { background:#202020; }
+@media(max-width:640px) { .agentic-panel-header { display:block; padding:18px; } .agentic-panel-header>a { display:inline-block; margin-top:12px; } }
+/* Long Chinese page titles keep the copy action on its own row. */
+#header div:has(> #page-title) { flex-wrap:wrap; }
+#page-title { flex-basis:100%; }
+#page-context-menu { margin-left:0; margin-top:8px; justify-content:flex-start; }
+li.navbar-link a[href="/chapters/chapter-01/1.1-提示链模式概述"] { background:#ff4d00; color:#fff; }
+div:has(> #page-title) { flex-wrap:wrap; }
+/* Translate Mintlify's built-in table-of-contents label for this Chinese site. */
+div[aria-label="On this page"] h2,
+div[aria-label="On this page"] h3 { font-size:0; }
+div[aria-label="On this page"] h2::after,
+div[aria-label="On this page"] h3::after { content:"本页目录"; font-size:14px; }

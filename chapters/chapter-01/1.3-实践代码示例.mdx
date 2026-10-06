@@ -1,0 +1,60 @@
+---
+title: "1.3 实践代码示例"
+---
+
+实现提示链的方式多种多样，既可以通过脚本进行直接的顺序函数调用，也可以使用专门为管理控制流、状态和组件集成而设计的框架。诸如 LangChain、LangGraph、Crew AI 以及 Google Agent Developer Kit（后续简称 Google ADK）等框架，为构建和执行这些多步骤流程提供了结构化的环境，这对于复杂应用架构尤为有利。
+
+为便于演示，我们选择 LangChain 和 LangGraph 作为示例工具，因为它们的核心 API 是专门为组合操作链和操作图而设计的。LangChain 为线性序列提供了基础抽象，而 LangGraph 则在其基础上扩展了有状态和循环计算能力，这对实现更复杂的智能体行为至关重要。本例将重点展示一个基本的线性序列。
+
+以下代码实现了一个两步提示链，作为数据处理管道使用。初始阶段旨在解析非结构化文本并提取特定信息。后续阶段接收提取的输出，并将其转换为结构化数据格式。
+
+要重现此流程，必须首先安装相应依赖库。可以使用以下命令完成安装：
+
+```bash
+pip install langchain langchain-community langchain-openai langgraph
+```
+
+请注意，`langchain-openai` 可根据实际使用的模型供应商选择相应的软件包。随后，在执行环境中配置 API 密钥，该密钥由所选的语言模型供应商（如 OpenAI、Google Gemini 或 Anthropic）提供。
+
+```python
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+# For better security, load environment variables from a .env file.
+# from dotenv import load_dotenv
+# load_dotenv()
+# Make sure your OPENAI_API_KEY is set in the .env file.
+# Initialize the Language Model.
+llm = ChatOpenAI(temperature=0)
+# --- Prompt 1: Extract Information ---
+prompt_extract = ChatPromptTemplate.from_template(
+    "Extract the technical specifications from the following text:\n\n{text_input}"
+)
+# --- Prompt 2: Transform to JSON ---
+prompt_transform = ChatPromptTemplate.from_template(
+    "Transform the following specifications into a JSON object with "
+    "'cpu', 'memory', and 'storage' as keys:\n\n{specifications}"
+)
+# --- Build the Chain using LCEL ---
+# The StrOutputParser() converts the LLM's message output to a simple string.
+extraction_chain = prompt_extract | llm | StrOutputParser()
+# The full chain passes the output of the extraction chain into the
+# 'specifications' variable for the transformation prompt.
+full_chain = (
+    {"specifications": extraction_chain}
+    | prompt_transform
+    | llm
+    | StrOutputParser()
+)
+# --- Run the Chain ---
+input_text = (
+    "The new laptop model features a 3.5 GHz octa-core processor, "
+    "16GB of RAM, and a 1TB NVMe SSD."
+)
+# Execute the chain with the input text dictionary.
+final_result = full_chain.invoke({"text_input": input_text})
+print("\n--- Final JSON Output ---")
+print(final_result)
+```
+
+这段 Python 代码展示了如何使用 LangChain 框架构建一个文本处理流程。首先，代码定义了两个不同功能的提示词模板，其中一个专门用于从输入文本中提取技术规格，而另一个则负责将这些技术规格转换为结构化的 JSON 对象。在此过程中，它借助 ChatOpenAI 模型与语言模型进行交互，并利用 StrOutputParser 确保输出结果为规整的字符串格式。值得注意的是，代码采用了 LangChain 表达式语言（LCEL）将这些提示词和语言模型巧妙地组合在一起。具体而言，第一个处理链 `extraction_chain` 专门负责提取技术规格信息；随后，`full_chain` 会接收 `extraction_chain` 的输出，并将其作为第二个提示词的输入，以完成格式转换。为了演示整个流程，代码中引入了一段描述笔记本电脑配置的示例文本。当调用 `full_chain` 处理该文本时，数据会依次经过提取和格式转换两个阶段。最终，程序会打印出经过处理得到的 JSON 字符串。

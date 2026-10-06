@@ -1,0 +1,135 @@
+---
+title: "2.3 实践代码示例（LangChain）"
+---
+
+在代码中实现路由功能，需要定义可能的路径以及决定选择哪条路径的判断逻辑。LangChain 和 LangGraph 这样的框架为此提供了特定的组件和结构。LangGraph 基于状态的图结构在可视化和实现路由逻辑方面尤其直观。
+
+这段代码展示了一个使用 LangChain 和 Google Generative AI 的简单类智能体系统。它设置了一个“协调器”，根据用户请求的意图（预订、信息查询或意图不明确）将请求路由到不同的模拟“子智能体”处理程序。该系统使用语言模型对请求进行分类，然后将其委派给合适的处理函数，模拟了多智能体架构中常见的基本委派模式。首先请确保你已安装必要的库：
+
+```bash
+pip install \
+  langchain \
+  langgraph \
+  google-cloud-aiplatform \
+  langchain-google-genai \
+  google-adk \
+  deprecated \
+  pydantic
+```
+
+```python
+# Copyright (c) 2025 Marco Fago
+# https://www.linkedin.com/in/marco-fago/
+# This code is licensed under the MIT License.
+# See the LICENSE file in the repository for the full license text.
+
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableBranch, RunnablePassthrough
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+# --- Configuration ---
+# Ensure your API key environment variable is set, e.g. GOOGLE_API_KEY
+try:
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash",
+        temperature=0,
+    )
+    print(f"Language model initialized: {llm.model}")
+except Exception as e:
+    print(f"Error initializing language model: {e}")
+    llm = None
+
+# --- Define Simulated Sub-Agent Handlers ---
+def booking_handler(request: str) -> str:
+    """Simulates the Booking Agent handling a request."""
+    print("\n--- DELEGATING TO BOOKING HANDLER ---")
+    return (
+        f"Booking Handler processed request: '{request}'. "
+        "Result: Simulated booking action."
+    )
+
+def info_handler(request: str) -> str:
+    """Simulates the Info Agent handling a request."""
+    print("\n--- DELEGATING TO INFO HANDLER ---")
+    return (
+        f"Info Handler processed request: '{request}'. "
+        "Result: Simulated information retrieval."
+    )
+
+def unclear_handler(request: str) -> str:
+    """Handles requests that couldn't be delegated."""
+    print("\n--- HANDLING UNCLEAR REQUEST ---")
+    return (
+        f"Coordinator could not delegate request: '{request}'. "
+        "Please clarify."
+    )
+
+# --- Define Coordinator Router Chain ---
+coordinator_router_prompt = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            """Analyze the user's request and determine which specialist handler
+            should process it.
+            - If the request is related to booking flights or hotels, output 'booker'.
+            - For all other general information questions, output 'info'.
+            - If the request is unclear or doesn't fit either category, output 'unclear'.
+            ONLY output one word: 'booker', 'info', or 'unclear'.""",
+        ),
+        ("user", "{request}"),
+    ]
+)
+
+if llm:
+    coordinator_router_chain = coordinator_router_prompt | llm | StrOutputParser()
+
+# --- Define Delegation Logic ---
+branches = {
+    "booker": RunnablePassthrough.assign(
+        output=lambda x: booking_handler(x["request"]["request"])
+    ),
+    "info": RunnablePassthrough.assign(
+        output=lambda x: info_handler(x["request"]["request"])
+    ),
+    "unclear": RunnablePassthrough.assign(
+        output=lambda x: unclear_handler(x["request"]["request"])
+    ),
+}
+
+delegation_branch = RunnableBranch(
+    (
+        lambda x: x["decision"].strip() == "booker",
+        branches["booker"],
+    ),
+    (
+        lambda x: x["decision"].strip() == "info",
+        branches["info"],
+    ),
+    branches["unclear"],
+)
+
+coordinator_agent = (
+    {
+        "decision": coordinator_router_chain,
+        "request": RunnablePassthrough(),
+    }
+    | delegation_branch
+    | (lambda x: x["output"])
+)
+
+# --- Example Usage ---
+def main():
+    if not llm:
+        print("\nSkipping execution due to LLM initialization failure.")
+        return
+
+    print("--- Running with a booking request ---")
+    request_a = "Book me a flight to London."
+    result_a = coordinator_agent.invoke({"request": request_a})
+    print(f"Final Result A: {result_a}")
+
+    print("\n--- Running with an info request ---")
+    request_b = "What is the capital of Italy?"
+    result_b = coordinator_agent.invoke({"request": request_b})
+```
