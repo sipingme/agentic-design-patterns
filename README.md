@@ -19,7 +19,7 @@ npm run build
 
 ## 部署
 
-线上地址：<https://docs.siping.me>。也可通过 `http://docs.siping.me:3001` 访问直连端口。
+线上地址：<https://docs.siping.me>。
 
 向 `main` 推送提交会触发 `.github/workflows/deploy.yml`，先构建静态站，再通过专用 SSH 部署账号同步到 VPS 的 Nginx 站点目录。仓库使用 `DEPLOY_SSH_KEY` Actions secret；不要将 root 密码用于 CI。
 
