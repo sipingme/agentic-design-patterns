@@ -29,7 +29,10 @@ chown "$deploy_user:$deploy_user" "$authorized_keys"
 chmod 600 "$authorized_keys"
 
 install -d -o "$deploy_user" -g "$nginx_group" -m 2775 "$deploy_root/releases"
-install -o root -g root -m 644 "$(dirname "$0")/nginx.conf" /etc/nginx/conf.d/docs.siping.me.conf
+if [[ ! -e /etc/nginx/conf.d/docs.siping.me.conf ]]; then
+  install -o root -g root -m 644 "$(dirname "$0")/nginx.conf" /etc/nginx/conf.d/docs.siping.me.conf
+fi
+install -o root -g root -m 644 "$(dirname "$0")/port-3001.conf" /etc/nginx/conf.d/agentic-docs-3001.conf
 
 if ! command -v rsync >/dev/null; then
   if command -v dnf >/dev/null; then
